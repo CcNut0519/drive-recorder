@@ -44,15 +44,6 @@ class _MyMaterialAppState extends State<StatefulWidget> {
  @override
  Widget build(BuildContext context) {
    return Scaffold(
-     // appBar: AppBar(
-     //   title: const Text(
-     //     'Driver App',
-     //     //style: TextStyle(color: Colors.white),
-     //   ),
-     //   //backgroundColor: Colors.blueGrey,
-     //   centerTitle: true,
-     // ),
-     // drawer: const DrawerView(),
      body: pages[currentPage],
      bottomNavigationBar: BottomNavigationBar(
        items: bottomItems,

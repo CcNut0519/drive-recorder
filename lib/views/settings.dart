@@ -1,3 +1,4 @@
+import 'package:drive_recorder/conponents/input_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:drive_recorder/conponents/http.dart';
 
@@ -96,6 +97,18 @@ class _SettingPageState extends State<SettingPage> {
                        ),
                      ],
                    );
+                 },
+               );
+             },
+           ),
+           ListTile(
+             title: const Text('WIFI名称'),
+             subtitle: const Text('设置设备的WIFI名称'),
+             onTap: () {
+               showDialog(
+                 context: context,
+                 builder: (BuildContext context) {
+                   return const MyInputDialog(title: "更改WIFI名称", content: "设置设备的WIFI名称", baseMsg: "app/setwifi?wifissid=",);
                  },
                );
              },

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 /// 抽屉View
@@ -11,22 +12,14 @@ class DrawerView extends StatelessWidget {
         padding: EdgeInsets.zero,
         children: const <Widget>[
           DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
               child: Text(
-                '导航栏',
-                style: TextStyle(color: Colors.white, fontSize: 24),
+                '历史连接记录',
+                style: TextStyle(fontSize: 24),
               )),
           ListTile(
-            leading: Icon(Icons.home),
-            title: Text('主页'),
-          ),
-          ListTile(
-            leading: Icon(Icons.photo),
-            title: Text('图库'),
-          ),
-          ListTile(
-            leading: Icon(Icons.settings),
-            title: Text('设置'),
+            leading: Icon(Icons.history),
+            title: Text('Mettax'),
+            subtitle: Text("2024-04-04 10:23:12"),
           ),
         ],
       ),

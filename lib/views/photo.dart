@@ -23,7 +23,7 @@ class _PhotoPageState extends State<PhotoPage> with SingleTickerProviderStateMix
 
  // 用于跟踪每个分类选项对应的图片列表
  List<List<String>> imageLists = [
-   ['images/loop.jpg', 'images/loop.jpg', 'images/loop.jpg'], // LOOP
+   ['images/loop.jpg', 'images/loop.jpg', 'images/loop.jpg', 'images/loop.jpg'], // LOOP
    ['images/emr.jpeg', 'images/emr.jpeg'], // EMR
    ['images/event.png', 'images/event.png', 'images/event.png'], // EVENT
    ['images/park.jpg'], // PARK
@@ -60,6 +60,9 @@ class _PhotoPageState extends State<PhotoPage> with SingleTickerProviderStateMix
        itemCount: imageLists[_selectedIndex].length, // 根据索引获取对应分类的图片数量
        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
          crossAxisCount: 3, // 每行显示3张图片
+         mainAxisSpacing: 10.0, // 主轴（竖直方向）上的间隔大小
+         crossAxisSpacing: 10.0, // 交叉轴（水平方向）上的间隔大小
+         childAspectRatio: 1.77,
        ),
        itemBuilder: (BuildContext context, int index) {
          return Image.asset(imageLists[_selectedIndex][index]); // 根据索引获取对应分类的图片路径
