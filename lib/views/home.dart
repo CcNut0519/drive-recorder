@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:drive_recorder/conponents/http.dart';
 import 'package:drive_recorder/conponents/alert_dialog.dart';
 import 'package:drive_recorder/conponents/drawerView.dart';
+import 'package:drive_recorder/conponents/db_helper.dart';
+import 'package:sqflite/sqflite.dart' as sql;
 
 // 定义主页类 HomePage
 class HomePage extends StatefulWidget {
@@ -50,6 +52,12 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     HttpRequest http = HttpRequest(context);
+    Map<String, dynamic> deviceInfo = {
+      'device_name': '',
+      'device_ip': '192.168.1.1',
+      'last_connected_time': DateTime.now().toString(),
+      'connected_count': 1,
+    };
 
     return Scaffold(
       appBar: AppBar(),
@@ -133,6 +141,7 @@ class _HomePageState extends State<HomePage> {
               // 浮动操作按钮
               child: const Icon(Icons.link),
               onPressed: () async {
+                sql.Database database = await SQLHelper.db();
                 http.getHttp('app/enterrecorder');
                 http.getHttp('app/setsystime?date${DateTime.now().toString()}');
                 print(DateTime.now().toString());
@@ -141,9 +150,14 @@ class _HomePageState extends State<HomePage> {
                 deviceName =
                     '已连接：${(await http.getHttp('app/getproductinfo'))['info']['model']}';
                 _videoPlayerController.play();
+                deviceInfo['device_name'] = deviceName;
+                deviceInfo['connected_count'] = deviceInfo['connected_count'] + 1;
+                await SQLHelper.insertDevice(database, deviceInfo);
                 setState(() {
                   showExtraText = true; // 更新状态，显示额外文本
                 });
+                // 关闭数据库连接
+                await database.close();
               }),
         ],
       ),

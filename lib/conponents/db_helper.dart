@@ -7,9 +7,7 @@ class SQLHelper {
       id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
       device_name TEXT,
       device_ip TEXT,
-      first_connected_time DATETIME,
       last_connected_time DATETIME,
-      total_connected_time,
       connected_count INTEGER,
     )""");
   }
@@ -21,19 +19,24 @@ class SQLHelper {
     });
   }
 
-  static Future<int> insertDevice(sql.Database database, Map<String, dynamic> device) async {
+  static Future<int> insertDevice(
+      sql.Database database, Map<String, dynamic> device) async {
     return await database.insert('history_devices', device);
   }
 
-  static Future<List<Map<String, dynamic>>> getDevices(sql.Database database) async {
+  static Future<List<Map<String, dynamic>>> getDevices(
+      sql.Database database) async {
     return await database.query('history_devices');
   }
 
-  static Future<int> updateDevice(sql.Database database, Map<String, dynamic> device) async {
-    return await database.update('history_devices', device, where: 'id = ?', whereArgs: [device['id']]);
+  static Future<int> updateDevice(
+      sql.Database database, Map<String, dynamic> device) async {
+    return await database.update('history_devices', device,
+        where: 'id = ?', whereArgs: [device['id']]);
   }
 
   static Future<int> deleteDevice(sql.Database database, int id) async {
-    return await database.delete('history_devices', where: 'id = ?', whereArgs: [id]);
+    return await database
+        .delete('history_devices', where: 'id = ?', whereArgs: [id]);
   }
 }
