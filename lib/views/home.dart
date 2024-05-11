@@ -3,7 +3,7 @@ import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:get/get.dart';
 import 'package:drive_recorder/conponents/http.dart';
 import 'package:drive_recorder/conponents/alert_dialog.dart';
-import 'package:drive_recorder/conponents/drawerView.dart';
+import 'package:drive_recorder/conponents/drawer_view.dart';
 import 'package:drive_recorder/conponents/db_helper.dart';
 import 'package:sqflite/sqflite.dart' as sql;
 
@@ -17,11 +17,8 @@ class HomePage extends StatefulWidget {
 
 // 定义主页状态类，继承自主页类
 class _HomePageState extends State<HomePage> {
-  var inuutGet = TextEditingController(text: 'app/getproductinfo');
-  var inputPost = TextEditingController(text: 'app/setparam?param=');
   late VlcPlayerController _videoPlayerController;
-  late String deviceName;
-  bool showExtraText = false;
+  String deviceName = '未连接到设备';
 
   Future<void> initializePlayer() async {} // 初始化视频播放器
 
@@ -54,13 +51,16 @@ class _HomePageState extends State<HomePage> {
     HttpRequest http = HttpRequest(context);
     Map<String, dynamic> deviceInfo = {
       'device_name': '',
-      'device_ip': '192.168.1.1',
-      'last_connected_time': DateTime.now().toString(),
+      'device_ip': '192.168.169.1',
+      'last_connected_time': '',
       'connected_count': 1,
     };
 
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        title: const Text('主页'),
+        centerTitle: true,
+      ),
       drawer: const DrawerView(),
       body: Center(
           child: Column(
@@ -74,47 +74,29 @@ class _HomePageState extends State<HomePage> {
               placeholder: const Center(child: CircularProgressIndicator()),
             ),
           ),
-          TextField(
-            controller: inuutGet,
-            decoration: InputDecoration(
-              labelText: '请输入GET地址',
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.send),
-                onPressed: () {
-                  http.getHttp(inuutGet.text).then((result) {
-                    showDialog(
-                        context: context,
-                        builder: (_) {
-                          return MyAlertDialog(
-                              title: 'get info', content: result.toString());
-                        });
-                  });
-                },
-              ),
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
           const SizedBox(height: 20),
-          TextField(
-            controller: inputPost,
-            decoration: InputDecoration(
-              labelText: '请输入POST地址',
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.send),
-                onPressed: () {
-                  http.postHttp(inputPost.text); // 发起 POST 请求
-                },
-              ),
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-          if (showExtraText)
-            Text(
+          ElevatedButton(
+            onPressed: () {
+              showDialog(context: context, builder: (BuildContext context){
+                return AlertDialog(
+                  title: const Text('设备信息'),
+                  content: Text('设备名称：${deviceInfo['device_name']}\n设备IP：${deviceInfo['device_ip']}\n最后连接时间：${deviceInfo['last_connected_time']}\n连接次数：${deviceInfo['connected_count']}'),
+                  actions: [
+                    TextButton(
+                      child: const Text('确定'),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                );
+              });
+            },
+            child: Text(
               deviceName,
               style: const TextStyle(fontSize: 16, color: Colors.blueGrey),
             ),
+          ),
         ],
       )),
       floatingActionButton: Column(
@@ -141,7 +123,7 @@ class _HomePageState extends State<HomePage> {
               // 浮动操作按钮
               child: const Icon(Icons.link),
               onPressed: () async {
-                sql.Database database = await SQLHelper.db();
+                // sql.Database database = await SQLHelper.db();
                 http.getHttp('app/enterrecorder');
                 http.getHttp('app/setsystime?date${DateTime.now().toString()}');
                 print(DateTime.now().toString());
@@ -151,13 +133,12 @@ class _HomePageState extends State<HomePage> {
                     '已连接：${(await http.getHttp('app/getproductinfo'))['info']['model']}';
                 _videoPlayerController.play();
                 deviceInfo['device_name'] = deviceName;
-                deviceInfo['connected_count'] = deviceInfo['connected_count'] + 1;
-                await SQLHelper.insertDevice(database, deviceInfo);
-                setState(() {
-                  showExtraText = true; // 更新状态，显示额外文本
-                });
+                deviceInfo['connected_count'] =
+                    deviceInfo['connected_count'] + 1;
+                
+                // await SQLHelper.insertDevice(database, deviceInfo);
                 // 关闭数据库连接
-                await database.close();
+                // await database.close();
               }),
         ],
       ),

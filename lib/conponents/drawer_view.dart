@@ -10,16 +10,30 @@ class DrawerView extends StatelessWidget {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
-        children: const <Widget>[
-          DrawerHeader(
-              child: Text(
-                '历史连接记录',
-                style: TextStyle(fontSize: 24),
-              )),
-          ListTile(
-            leading: Icon(Icons.history),
-            title: Text('Mettax'),
-            subtitle: Text("2024-04-04 10:23:12"),
+        children: <Widget>[
+          const DrawerHeader(
+            child: Row(
+              children: [
+                Icon(Icons.history,
+                    color: Colors.blueGrey, size: 30), // 使用图标代替文本
+                SizedBox(width: 10), // 添加一些间距
+                Text(
+                  '历史连接记录',
+                  style: TextStyle(fontSize: 24, color: Colors.blueGrey),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10), // 设置圆角半径为10
+                ),
+                title: const Text('Mettax'),
+                subtitle: const Text("2024-04-04 10:23:12"),
+                trailing: const Icon(Icons.info_outline),
+                tileColor: Colors.blueGrey[100]),
           ),
         ],
       ),
