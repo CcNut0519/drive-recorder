@@ -1,4 +1,4 @@
-import 'package:path/path.dart';
+// import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart' as sql;
 
 class SQLHelper {
@@ -8,7 +8,7 @@ class SQLHelper {
       device_name TEXT,
       device_ip TEXT,
       last_connected_time DATETIME,
-      connected_count INTEGER,
+      connected_count INTEGER
     )""");
   }
 

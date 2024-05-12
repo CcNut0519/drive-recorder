@@ -27,13 +27,26 @@ class DrawerView extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10), // 设置圆角半径为10
-                ),
-                title: const Text('Mettax'),
-                subtitle: const Text("2024-04-04 10:23:12"),
-                trailing: const Icon(Icons.info_outline),
-                tileColor: Colors.blueGrey[100]),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10), // 设置圆角半径为10
+              ),
+              title: const Text('Mettax'),
+              subtitle: const Text("2024-04-04 10:23:12"),
+              trailing: const Icon(Icons.info_outline),
+              tileColor: Colors.blueGrey[100],
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return const AlertDialog(
+                      title: Text('Mettax'),
+                      content: Text(
+                              '设备名称：Mettax\n设备IP：192.168.169.1\n最后连接时间：2024-04-04 10:23:12\n连接次数：1'),
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
