@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:drive_recorder/conponents/http.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 // 定义一个名为 MyAlertDialog 的 StatefulWidget 类，用于显示自定义的警告对话框
 class MyInputDialog extends StatefulWidget {
@@ -20,7 +21,7 @@ class _MyInputDialogState extends State<MyInputDialog> {
 
   @override
   Widget build(BuildContext context) {
-    HttpRequest http = HttpRequest(context);
+    HttpRequest http = HttpRequest();
     // 构建警告对话框并返回
     return AlertDialog(
       title: Center(child: Text(widget.title)), // 设置标题并居中显示
@@ -42,6 +43,14 @@ class _MyInputDialogState extends State<MyInputDialog> {
           onPressed: () {
             http.postHttp("${widget.baseMsg}${inputMsg.text}");
             Navigator.of(context).pop(); // 关闭对话框
+            Fluttertoast.showToast(
+                msg: "修改成功",
+                toastLength: Toast.LENGTH_SHORT,
+                gravity: ToastGravity.BOTTOM,
+                timeInSecForIosWeb: 1,
+                backgroundColor: Colors.blueGrey,
+                textColor: Colors.white,
+                fontSize: 16.0);
           },
         ),
       ],

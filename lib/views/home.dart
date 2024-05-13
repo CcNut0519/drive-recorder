@@ -3,7 +3,11 @@ import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:get/get.dart';
 import 'package:drive_recorder/conponents/http.dart';
 import 'package:drive_recorder/conponents/alert_dialog.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:drive_recorder/conponents/drawer_view.dart';
+import 'package:drive_recorder/main.dart';
+import 'package:drive_recorder/views/photo.dart';
+import 'package:drive_recorder/views/settings.dart';
 import 'package:drive_recorder/conponents/db_helper.dart';
 import 'package:sqflite/sqflite.dart' as sql;
 
@@ -23,13 +27,41 @@ class _HomePageState extends State<HomePage>
   String rtspAddr = 'rtsp://192.168.169.1';
   String buttonText = '点此连接设备';
   bool showButton = false;
+  Map<String, dynamic> deviceInfo = {
+    'device_name': '',
+    'device_ip': '192.168.169.1',
+    'last_connected_time': '',
+    'connected_count': 0,
+  };
 
   Future<void> initializePlayer() async {} // 初始化视频播放器
 
   @override
   void initState() {
     super.initState();
+    initCam();
     initVlc();
+  }
+
+  void initCam() async {
+    HttpRequest http = HttpRequest();
+    http.getHttp('app/getdeviceattr');
+    http.getHttp('app/setsystime?date${DateTime.now().toString()}');
+    http.getHttp('app/enterrecorder');
+    http.getHttp('app/getmediainfo').then((rtsp) {
+      rtspAddr = rtsp['info']['rtsp'];
+      print(rtspAddr);
+    });
+    http.getHttp('app/getparamvalue?param=rec');
+    _videoPlayerController.play();
+    // deviceInfo['device_name'] = result['info']['model'];
+    deviceInfo['last_connected_time'] = DateTime.now().toString();
+    deviceInfo['connected_count'] = deviceInfo['connected_count'] + 1;
+    showButton = true;
+    // setState(() {
+    //   buttonText = result['info']['model'];
+    // });
+    Get.snackbar('恭喜！', '已成功连接到行车记录仪', icon: const Icon(Icons.link));
   }
 
   void initVlc() {
@@ -37,7 +69,7 @@ class _HomePageState extends State<HomePage>
     _videoPlayerController = VlcPlayerController.network(
       'rtsp://192.168.169.1',
       hwAcc: HwAcc.full,
-      autoPlay: false,
+      autoPlay: true,
       allowBackgroundPlayback: true,
       options: VlcPlayerOptions(
         advanced: VlcAdvancedOptions([
@@ -56,6 +88,34 @@ class _HomePageState extends State<HomePage>
         ),
       ),
     );
+    _videoPlayerController.addListener(() {
+      // 获取所有状态的回调
+      if (_videoPlayerController.autoInitialize) {
+        if (_videoPlayerController.value.isBuffering) {
+          // 视频正在缓冲
+          Fluttertoast.showToast(
+              msg: "视频正在缓冲",
+              toastLength: Toast.LENGTH_LONG,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.blueGrey,
+              textColor: Colors.white,
+              fontSize: 16.0);
+        }
+
+        if (_videoPlayerController.value.hasError) {
+          // 播放器发生错误
+          Fluttertoast.showToast(
+              msg: "视频播放错误",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.blueGrey,
+              textColor: Colors.white,
+              fontSize: 16.0);
+        }
+      }
+    });
   }
 
   @override
@@ -68,20 +128,14 @@ class _HomePageState extends State<HomePage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    HttpRequest http = HttpRequest(context);
-    Map<String, dynamic> deviceInfo = {
-      'device_name': '',
-      'device_ip': '192.168.169.1',
-      'last_connected_time': '',
-      'connected_count': 0,
-    };
+    HttpRequest http = HttpRequest();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('主页'),
         centerTitle: true,
       ),
-      drawer: const DrawerView(),
+      // drawer: const DrawerView(),
       body: Center(
           child: Column(
         children: [
@@ -97,120 +151,57 @@ class _HomePageState extends State<HomePage>
             ),
           ),
           const SizedBox(height: 20),
-          Column(
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  http.getHttp('app/getproductinfo').then((result) {
-                    if (result['result'] == 0) {
-                      showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: const Text('找到可用设备'),
-                              content: Text(
-                                  '设备名称：${result['info']['model']}\n设备厂商：${result['info']['company']}\n设备SOC：${result['info']['soc']}\n设备SP：${result['info']['sp']}'),
-                              actions: [
-                                TextButton(
-                                  child: const Text('取消'),
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                                TextButton(
-                                  child: const Text('确认连接'),
-                                  onPressed: () {
-                                    http.getHttp('app/getdeviceattr');
-                                    http.getHttp(
-                                        'app/setsystime?date${DateTime.now().toString()}');
-                                    http.getHttp('app/enterrecorder');
-                                    http
-                                        .getHttp('app/getmediainfo')
-                                        .then((rtsp) {
-                                      rtspAddr = rtsp['info']['rtsp'];
-                                      print(rtspAddr);
-                                    });
-                                    http.getHttp('app/getparamvalue?param=rec');
-                                    _videoPlayerController.play();
-                                    deviceInfo['device_name'] =
-                                        result['info']['model'];
-                                    deviceInfo['last_connected_time'] =
-                                        DateTime.now().toString();
-                                    deviceInfo['connected_count'] =
-                                        deviceInfo['connected_count'] + 1;
-                                    showButton = true;
-                                    setState(() {
-                                      buttonText = result['info']['model'];
-                                    });
-                                    Get.snackbar('恭喜！', '已成功连接到行车记录仪',
-                                        icon: const Icon(Icons.link));
-                                    Navigator.of(context).pop();
-                                  },
-                                ),
-                              ],
-                            );
-                          });
-                    } else {
-                      showDialog(
-                          context: context,
-                          builder: (_) {
-                            return const MyAlertDialog(
-                                // 自定义提示对话框
-                                title: '没有找到设备！',
-                                content: '请检查wifi是否连接正确，或尝试重新连接设备。');
-                          });
-                    }
-                  });
-                },
-                child: Text(
-                  buttonText,
-                  style: const TextStyle(fontSize: 16, color: Colors.blueGrey),
-                ),
-              ),
-              const Icon(
-                Icons.link,
-                color: Colors.blueGrey,
-              )
-            ],
+          ElevatedButton(
+            onPressed: () {
+              http.getHttp('app/getproductinfo').then((result) {
+                showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Text('设备名称：${result['info']['model']}'),
+                        content: Text(
+                            '设备厂商：${result['info']['company']}\n设备SOC：${result['info']['soc']}\n设备SP：${result['info']['sp']}'),
+                      );
+                    });
+              });
+            },
+            child: const Text(
+              '已连接：MettaX',
+              style: TextStyle(fontSize: 16, color: Colors.blueGrey),
+            ),
           ),
         ],
       )),
-      floatingActionButton: showButton
-          ? Column(
-              // 浮动操作按钮
-              mainAxisAlignment: MainAxisAlignment.end, // 主轴对齐方式
-              children: [
-                FloatingActionButton(
-                  child: const Icon(Icons.camera),
-                  onPressed: () {
-                    http.getHttp('app/snapshot').then((result) {
-                      showDialog(
-                          context: context,
-                          builder: (_) {
-                            return MyAlertDialog(
-                                // 自定义提示对话框
-                                title: '拍摄成功！',
-                                content: result['info']);
-                          });
+      floatingActionButton: Column(
+        // 浮动操作按钮
+        mainAxisAlignment: MainAxisAlignment.end, // 主轴对齐方式
+        children: [
+          FloatingActionButton(
+            child: const Icon(Icons.camera_alt),
+            onPressed: () {
+              http.getHttp('app/snapshot').then((result) {
+                showDialog(
+                    context: context,
+                    builder: (_) {
+                      return MyAlertDialog(
+                          // 自定义提示对话框
+                          title: '拍摄成功！',
+                          content: result['info']);
                     });
-                  },
-                ),
-                const SizedBox(height: 10),
-                FloatingActionButton(
-                    // 浮动操作按钮
-                    child: const Icon(Icons.output_rounded),
-                    onPressed: () {
-                      http.getHttp('app/exitrecorder');
-                      _videoPlayerController.pause();
-                      rtspAddr = '';
-                      buttonText = '点此连接设备';
-                      setState(() {
-                        showButton = false;
-                      });
-                    }),
-              ],
-            )
-          : null,
+              });
+            },
+          ),
+          const SizedBox(height: 10),
+          FloatingActionButton(
+              // 浮动操作按钮
+              child: const Icon(Icons.output_rounded),
+              onPressed: () {
+                // http.getHttp('app/exitrecorder');
+                Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const ConnectPage()));
+              }),
+        ],
+      ),
     );
   }
 

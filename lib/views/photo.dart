@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:drive_recorder/conponents/http.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
+import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import 'package:fluttertoast/fluttertoast.dart';
 
 // 图片页面，继承自StatefulWidget
 class PhotoPage extends StatefulWidget {
@@ -15,7 +19,8 @@ class _PhotoPageState extends State<PhotoPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController; // 选项卡控制器
   late VlcPlayerController _videoPlayerController;
-  static const _cachingMs = 500;
+  // static const _cachingMs = 500;
+  late bool isPlaying = true;
   int _selectedIndex = 0; // 用于跟踪选项卡的索引
 
   // 图片分类
@@ -32,7 +37,10 @@ class _PhotoPageState extends State<PhotoPage>
   Future<void> initializePlayer() async {} // 初始化视频播放器
 
   void loadImageData() async {
-    HttpRequest http = HttpRequest(context);
+    for (var list in imageLists) {
+      list.clear();
+    }
+    HttpRequest http = HttpRequest();
     var result = await http.getHttp('app/getfilelist');
     List<dynamic> info = result['info'];
 
@@ -42,21 +50,68 @@ class _PhotoPageState extends State<PhotoPage>
 
       // 将每个文件夹中的文件路径存储到对应的 imageLists 中
       for (var file in files) {
+        String dateString = file['createtimestr'];
+
+        String year = dateString.substring(0, 4);
+        String month = dateString.substring(4, 6);
+        String day = dateString.substring(6, 8);
+        String hour = dateString.substring(8, 10);
+        String minute = dateString.substring(10, 12);
+        String second = dateString.substring(12, 14);
+
+        String formattedDateTime = '$year年$month月$day日\n$hour:$minute:$second';
         imageLists[getFolderIndex(folder)].add({
           'name': file['name'],
-          'date': file['createtimestr'],
+          'date': formattedDateTime,
         });
       }
     }
-
     // 重新构建界面
     setState(() {});
+  }
+
+  Future<void> downloadFile(String fileUrl, String fileName) async {
+    try {
+      // 获取临时目录路径
+      String tempDirPath = (await getTemporaryDirectory()).path;
+
+      // 下载文件保存路径
+      String filePath = '$tempDirPath/$fileName';
+
+      // 开始下载文件
+      final taskId = await FlutterDownloader.enqueue(
+        url: fileUrl,
+        savedDir: tempDirPath,
+        fileName: fileName,
+        showNotification: true,
+        openFileFromNotification: true,
+      );
+
+      // 下载任务监听
+      FlutterDownloader.registerCallback((id, status, progress) async {
+        if (taskId == id && status == DownloadTaskStatus.complete) {
+          // 下载完成后将文件从临时目录移动到永久存储目录
+          // 获取永久存储目录路径
+          Directory? externalDir = await getExternalStorageDirectory();
+          if (externalDir != null) {
+            String storageDirPath = externalDir.path;
+            String newFilePath = '$storageDirPath/$fileName';
+            // 移动文件
+            File(filePath).renameSync(newFilePath);
+          } else {
+            print('无法获取外部存储目录路径');
+          }
+        }
+      });
+    } catch (e) {
+      print('下载文件时出错：$e');
+    }
   }
 
   @override
   void initState() {
     super.initState();
-    initVlc();
+    // initVlc();
     _tabController = TabController(
         length: categories.length, vsync: this); // 初始化TabController
     _tabController.addListener(() {
@@ -68,30 +123,71 @@ class _PhotoPageState extends State<PhotoPage>
     loadImageData();
   }
 
-  void initVlc() {
+  void initVlc(String videoAddr) {
+    const cachingMs = 500;
     // 初始化 _videoPlayerController
-    _videoPlayerController = VlcPlayerController.network(
-      'rtsp://192.168.169.1',
-      hwAcc: HwAcc.full,
-      autoPlay: false,
-      allowBackgroundPlayback: true,
-      // options: VlcPlayerOptions(
-      //   advanced: VlcAdvancedOptions([
-      //     VlcAdvancedOptions.fileCaching(_cachingMs),
-      //     VlcAdvancedOptions.networkCaching(_cachingMs),
-      //     VlcAdvancedOptions.liveCaching(_cachingMs),
-      //     VlcAdvancedOptions.clockSynchronization(0),
-      //     VlcAdvancedOptions.clockJitter(_cachingMs),
-      //   ]),
-      //   audio: VlcAudioOptions([VlcAudioOptions.audioTimeStretch(true)]),
-      //   video: VlcVideoOptions(
-      //     [
-      //       VlcVideoOptions.dropLateFrames(false), // 确保不跳过帧
-      //       VlcVideoOptions.skipFrames(false) // 确保不跳过帧
-      //     ],
-      //   ),
-      // ),
-    );
+    _videoPlayerController = VlcPlayerController.network(videoAddr,
+        hwAcc: HwAcc.full,
+        autoPlay: true,
+        allowBackgroundPlayback: true,
+        options: VlcPlayerOptions(
+          advanced: VlcAdvancedOptions([
+            VlcAdvancedOptions.fileCaching(cachingMs),
+            VlcAdvancedOptions.networkCaching(cachingMs),
+            VlcAdvancedOptions.liveCaching(cachingMs),
+            VlcAdvancedOptions.clockSynchronization(0),
+            VlcAdvancedOptions.clockJitter(cachingMs),
+          ]),
+          audio: VlcAudioOptions([VlcAudioOptions.audioTimeStretch(true)]),
+          video: VlcVideoOptions(
+            [
+              VlcVideoOptions.dropLateFrames(false), // 确保不跳过帧
+              VlcVideoOptions.skipFrames(false) // 确保不跳过帧
+            ],
+          ),
+        ));
+    _videoPlayerController.addListener(() {
+      // 获取所有状态的回调
+      if (_videoPlayerController.autoInitialize) {
+        if (_videoPlayerController.value.isBuffering) {
+          // 视频正在缓冲
+          Fluttertoast.showToast(
+              msg: "视频正在缓冲",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.blueGrey,
+              textColor: Colors.white,
+              fontSize: 16.0);
+        }
+
+        if (_videoPlayerController.value.isEnded) {
+          // 视频播放完成
+          Fluttertoast.showToast(
+              msg: "视频播放完成",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.blueGrey,
+              textColor: Colors.white,
+              fontSize: 16.0);
+        }
+
+        if (_videoPlayerController.value.hasError) {
+          // 播放器发生错误
+          Fluttertoast.showToast(
+              msg: "视频播放错误",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.blueGrey,
+              textColor: Colors.white,
+              fontSize: 16.0);
+        }
+      }
+
+      // 其他状态处理...
+    });
   }
 
   @override
@@ -120,6 +216,7 @@ class _PhotoPageState extends State<PhotoPage>
 
   @override
   Widget build(BuildContext context) {
+    HttpRequest http = HttpRequest();
     return Scaffold(
       appBar: AppBar(
         title: const Text('媒体库'), // 页面标题
@@ -139,29 +236,83 @@ class _PhotoPageState extends State<PhotoPage>
             crossAxisCount: 2, // 每行显示3张图片
             mainAxisSpacing: 15.0, // 主轴（竖直方向）上的间隔大小
             crossAxisSpacing: 15.0, // 交叉轴（水平方向）上的间隔大小
-            childAspectRatio: 1.3,
+            childAspectRatio: 1.1,
           ),
           itemBuilder: (BuildContext context, int index) {
             return GestureDetector(
               onTap: () {
-                print(imageLists[_selectedIndex][index]['name']);
+                initVlc(
+                    'http://192.168.169.1${imageLists[_selectedIndex][index]['name']}');
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
                     return AlertDialog(
-                      title: Text(imageLists[_selectedIndex][index]['name']),
-                      content: VlcPlayer(
-                        controller: _videoPlayerController,
-                        aspectRatio: 16 / 9,
-                        placeholder: const Center(
-                            child: CircularProgressIndicator(
-                                backgroundColor: Colors.grey,
-                                color: Colors.blue)),
+                      title: Text(imageLists[_selectedIndex][index]['date']),
+                      content: SizedBox(
+                        height: 180,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            VlcPlayer(
+                              controller: _videoPlayerController,
+                              aspectRatio: 16 / 9,
+                              placeholder: const Center(
+                                  child: CircularProgressIndicator(
+                                      backgroundColor: Colors.grey,
+                                      color: Colors.blue)),
+                            ),
+                            const SizedBox(
+                              height: 1.5,
+                            ),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.blueGrey,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.5),
+                                    spreadRadius: 1,
+                                    blurRadius: 5,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ],
+                              ),
+                              child: IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    if (isPlaying) {
+                                      _videoPlayerController.pause();
+                                    } else {
+                                      _videoPlayerController.play();
+                                    }
+                                    isPlaying = !isPlaying;
+                                  });
+                                },
+                                icon: Icon(
+                                  isPlaying ? Icons.pause : Icons.play_arrow,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                       actions: <Widget>[
                         TextButton(
+                          child: const Text('删除'),
+                          onPressed: () {
+                            http.postHttp(
+                                'app/deletefile?file=${imageLists[_selectedIndex][index]['name']}');
+                            Navigator.of(context).pop(); // 关闭对话框
+                            loadImageData();
+                          },
+                        ),
+                        TextButton(
                           child: const Text('下载'),
                           onPressed: () {
+                            downloadFile(
+                                'app/deletefile?file=${imageLists[_selectedIndex][index]['name']}',
+                                '${imageLists[_selectedIndex][index]['date']}.ts');
                             Navigator.of(context).pop(); // 关闭对话框
                           },
                         ),
@@ -210,7 +361,7 @@ class _PhotoPageState extends State<PhotoPage>
       floatingActionButton: FloatingActionButton(
           child: const Icon(Icons.refresh),
           onPressed: () {
-            setState(() {});
+            loadImageData();
           }), // 新增按钮
     );
   }
