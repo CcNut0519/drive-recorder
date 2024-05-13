@@ -16,7 +16,10 @@ class _SettingPageState extends State<SettingPage> {
   var wifiName = TextEditingController();
   var wifiPsw = TextEditingController();
   bool soundSwitch = false;
-  String speakerVolume = '';
+  String speakerVolume = ''; //播报音量
+  String recSplitDuration = ''; //录制分段时间
+  String recResolution = ''; //录制分辨率
+  String wifiSsid = ''; //WIFI名称
   HttpRequest http = HttpRequest();
   String url = 'app/setwifi?wifissid=';
 
@@ -26,20 +29,80 @@ class _SettingPageState extends State<SettingPage> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
+// 获取播报音量
+  void getSpeakerVolume() {
     http.getHttp('app/getparamvalue?param=speaker').then((value) {
       if (value['info']['value'] == 0) {
-        speakerVolume = '关闭';
+        setState(() {
+          speakerVolume = '关闭';
+        });
       } else if (value['info']['value'] == 1) {
-        speakerVolume = '低';
+        setState(() {
+          speakerVolume = '低';
+        });
       } else if (value['info']['value'] == 2) {
-        speakerVolume = '中';
+        setState(() {
+          speakerVolume = '中';
+        });
       } else if (value['info']['value'] == 3) {
-        speakerVolume = '高';
+        setState(() {
+          speakerVolume = '高';
+        });
       } else {
-        speakerVolume = '最高';
+        setState(() {
+          speakerVolume = '最高';
+        });
       }
+    });
+  }
+
+// 获取录制分辨率
+  void getRecResolution() {
+    http.getHttp('app/getparamvalue?param=rec_resolution').then((value) {
+      if (value['info']['value'] == 0) {
+        setState(() {
+          recResolution = '720P';
+        });
+      } else if (value['info']['value'] == 1) {
+        setState(() {
+          recResolution = '1080P';
+        });
+      } else if (value['info']['value'] == 2) {
+        setState(() {
+          recResolution = '1296P';
+        });
+      } else {
+        setState(() {
+          recResolution = '2K';
+        });
+      }
+    });
+  }
+
+  //获取录制分段时间
+  void getRecSplitDuration() {
+    http.getHttp('app/getparamvalue?param=rec_split_duration').then((value) {
+      if (value['info']['value'] == 0) {
+        setState(() {
+          recSplitDuration = '1分钟';
+        });
+      } else {
+        setState(() {
+          recSplitDuration = '2分钟';
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    getSpeakerVolume();
+    getRecResolution();
+    getRecSplitDuration();
+    http.getHttp('app/getdeviceattr').then((value) {
+      setState(() {
+        wifiSsid = value['info']['ssid'];
+      });
     });
     // 返回包含设置页面内容的Scaffold
     return Scaffold(
@@ -67,6 +130,10 @@ class _SettingPageState extends State<SettingPage> {
             ListTile(
               title: const Text('WIFI名称'),
               subtitle: const Text('设置设备的WIFI名称'),
+              trailing: Text(
+                wifiSsid,
+                style: const TextStyle(fontSize: 14),
+              ),
               onTap: () {
                 showDialog(
                   context: context,
@@ -195,15 +262,72 @@ class _SettingPageState extends State<SettingPage> {
             ListTile(
               title: const Text('播报音量'),
               subtitle: const Text('调整设备语音播报声音大小'),
-              trailing: Text(speakerVolume),
+              trailing: Text(
+                speakerVolume,
+                style: const TextStyle(fontSize: 14),
+              ),
               // trailing: Text('${http.getHttp('app/getparamvalue?param=speaker')}'),
-              onTap: () async {
+              onTap: () {
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
                     return AlertDialog(
-                      title: const Text(''),
-                      content: const Text(''),
+                      title: const Text('选择播报音量'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SimpleDialogOption(
+                            onPressed: () {
+                              Navigator.pop(context, '0');
+                            },
+                            child: const Text(
+                              '关闭',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.teal),
+                            ),
+                          ),
+                          SimpleDialogOption(
+                            onPressed: () {
+                              Navigator.pop(context, '1');
+                            },
+                            child: const Text(
+                              '低',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.teal),
+                            ),
+                          ),
+                          SimpleDialogOption(
+                            onPressed: () {
+                              Navigator.pop(context, '2');
+                            },
+                            child: const Text(
+                              '中',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.teal),
+                            ),
+                          ),
+                          SimpleDialogOption(
+                            onPressed: () {
+                              Navigator.pop(context, '3');
+                            },
+                            child: const Text(
+                              '高',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.teal),
+                            ),
+                          ),
+                          SimpleDialogOption(
+                            onPressed: () {
+                              Navigator.pop(context, '4');
+                            },
+                            child: const Text(
+                              '最高',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.teal),
+                            ),
+                          ),
+                        ],
+                      ),
                       actions: <Widget>[
                         TextButton(
                           child: const Text('取消'),
@@ -211,37 +335,78 @@ class _SettingPageState extends State<SettingPage> {
                             Navigator.of(context).pop(); // 关闭对话框
                           },
                         ),
-                        TextButton(
-                          child: const Text('确认'),
-                          onPressed: () {
-                            http.postHttp('app/sdformat');
-                            Navigator.of(context).pop(); // 关闭对话框
-                            Fluttertoast.showToast(
-                                msg: "格式化成功",
-                                toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity.BOTTOM,
-                                timeInSecForIosWeb: 1,
-                                backgroundColor: Colors.blueGrey,
-                                textColor: Colors.white,
-                                fontSize: 16.0);
-                          },
-                        ),
                       ],
                     );
                   },
-                );
+                ).then((value) {
+                  if (value != null) {
+                    http.postHttp(
+                        'app/setparamvalue?param=speaker&value=$value');
+                    setState(() {
+                      getSpeakerVolume();
+                    });
+                  }
+                });
               },
             ),
             ListTile(
               title: const Text('视频分辨率'),
               subtitle: const Text('调整录制视频分辨率'),
-              onTap: () async {
+              trailing: Text(
+                recResolution,
+                style: const TextStyle(fontSize: 14),
+              ),
+              onTap: () {
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
                     return AlertDialog(
-                      title: const Text('再次确认'),
-                      content: const Text('确认要擦除您的存储卡数据吗？'),
+                      title: const Text('选择播报音量'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SimpleDialogOption(
+                            onPressed: () {
+                              Navigator.pop(context, '0');
+                            },
+                            child: const Text(
+                              '720P',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.teal),
+                            ),
+                          ),
+                          SimpleDialogOption(
+                            onPressed: () {
+                              Navigator.pop(context, '1');
+                            },
+                            child: const Text(
+                              '1080P',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.teal),
+                            ),
+                          ),
+                          SimpleDialogOption(
+                            onPressed: () {
+                              Navigator.pop(context, '2');
+                            },
+                            child: const Text(
+                              '1296P',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.teal),
+                            ),
+                          ),
+                          SimpleDialogOption(
+                            onPressed: () {
+                              Navigator.pop(context, '3');
+                            },
+                            child: const Text(
+                              '2K',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.teal),
+                            ),
+                          ),
+                        ],
+                      ),
                       actions: <Widget>[
                         TextButton(
                           child: const Text('取消'),
@@ -249,37 +414,58 @@ class _SettingPageState extends State<SettingPage> {
                             Navigator.of(context).pop(); // 关闭对话框
                           },
                         ),
-                        TextButton(
-                          child: const Text('确认'),
-                          onPressed: () {
-                            http.postHttp('app/sdformat');
-                            Navigator.of(context).pop(); // 关闭对话框
-                            Fluttertoast.showToast(
-                                msg: "格式化成功",
-                                toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity.BOTTOM,
-                                timeInSecForIosWeb: 1,
-                                backgroundColor: Colors.blueGrey,
-                                textColor: Colors.white,
-                                fontSize: 16.0);
-                          },
-                        ),
                       ],
                     );
                   },
-                );
+                ).then((value) {
+                  if (value != null) {
+                    http.postHttp(
+                        'app/setparamvalue?param=rec_resolution&value=$value');
+                    setState(() {
+                      getRecResolution();
+                    });
+                  }
+                });
               },
             ),
             ListTile(
               title: const Text('视频录制时长'),
               subtitle: const Text('调整设备循环录制的单个视频时长'),
-              onTap: () async {
+              trailing: Text(
+                recSplitDuration,
+                style: const TextStyle(fontSize: 14),
+              ),
+              onTap: () {
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
                     return AlertDialog(
-                      title: const Text(''),
-                      content: const Text(''),
+                      title: const Text('选择录制时长'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SimpleDialogOption(
+                            onPressed: () {
+                              Navigator.pop(context, '0');
+                            },
+                            child: const Text(
+                              '1分钟',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.teal),
+                            ),
+                          ),
+                          SimpleDialogOption(
+                            onPressed: () {
+                              Navigator.pop(context, '1');
+                            },
+                            child: const Text(
+                              '2分钟',
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.teal),
+                            ),
+                          ),
+                        ],
+                      ),
                       actions: <Widget>[
                         TextButton(
                           child: const Text('取消'),
@@ -287,25 +473,18 @@ class _SettingPageState extends State<SettingPage> {
                             Navigator.of(context).pop(); // 关闭对话框
                           },
                         ),
-                        TextButton(
-                          child: const Text('确认'),
-                          onPressed: () {
-                            http.postHttp('app/sdformat');
-                            Navigator.of(context).pop(); // 关闭对话框
-                            Fluttertoast.showToast(
-                                msg: "格式化成功",
-                                toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity.BOTTOM,
-                                timeInSecForIosWeb: 1,
-                                backgroundColor: Colors.blueGrey,
-                                textColor: Colors.white,
-                                fontSize: 16.0);
-                          },
-                        ),
                       ],
                     );
                   },
-                );
+                ).then((value) {
+                  if (value != null) {
+                    http.postHttp(
+                        'app/setparamvalue?param=rec_split_duration&value=$value');
+                    setState(() {
+                      getRecSplitDuration();
+                    });
+                  }
+                });
               },
             ),
           ],

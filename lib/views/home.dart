@@ -94,7 +94,7 @@ class _HomePageState extends State<HomePage>
         if (_videoPlayerController.value.isBuffering) {
           // 视频正在缓冲
           Fluttertoast.showToast(
-              msg: "视频正在缓冲",
+              msg: "实时画面正在缓冲",
               toastLength: Toast.LENGTH_LONG,
               gravity: ToastGravity.BOTTOM,
               timeInSecForIosWeb: 1,
@@ -196,7 +196,7 @@ class _HomePageState extends State<HomePage>
               // 浮动操作按钮
               child: const Icon(Icons.output_rounded),
               onPressed: () {
-                // http.getHttp('app/exitrecorder');
+                http.getHttp('app/exitrecorder');
                 Navigator.of(context).pushReplacement(
                     MaterialPageRoute(builder: (_) => const ConnectPage()));
               }),

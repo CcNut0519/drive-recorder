@@ -24,7 +24,7 @@ class _PhotoPageState extends State<PhotoPage>
   int _selectedIndex = 0; // 用于跟踪选项卡的索引
 
   // 图片分类
-  List<String> categories = ['循环录像', '紧急录像', '事件', '停车监控'];
+  List<String> categories = ['循环录像', '紧急录像', '拍摄照片', '停车监控'];
 
   // 用于跟踪每个分类选项对应的图片列表
   List<List<Map<String, dynamic>>> imageLists = [
