@@ -361,7 +361,7 @@ class _SettingPageState extends State<SettingPage> {
                   context: context,
                   builder: (BuildContext context) {
                     return AlertDialog(
-                      title: const Text('选择播报音量'),
+                      title: const Text('选择视频分辨率'),
                       content: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [

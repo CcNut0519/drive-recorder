@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:get/get.dart';
 import 'package:drive_recorder/conponents/http.dart';
@@ -97,10 +98,10 @@ class _HomePageState extends State<HomePage>
               msg: "实时画面正在缓冲",
               toastLength: Toast.LENGTH_LONG,
               gravity: ToastGravity.BOTTOM,
-              timeInSecForIosWeb: 1,
+              timeInSecForIosWeb: 5,
               backgroundColor: Colors.blueGrey,
               textColor: Colors.white,
-              fontSize: 16.0);
+              fontSize: 16.0,);
         }
 
         if (_videoPlayerController.value.hasError) {
@@ -140,6 +141,10 @@ class _HomePageState extends State<HomePage>
           child: Column(
         children: [
           const SizedBox(height: 30),
+          const Divider(
+            height: 1.0,
+            color: Colors.blueGrey,
+          ),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: VlcPlayer(
@@ -149,6 +154,10 @@ class _HomePageState extends State<HomePage>
                   child: CircularProgressIndicator(
                       backgroundColor: Colors.grey, color: Colors.blue)),
             ),
+          ),
+          const Divider(
+            height: 1.0,
+            color: Colors.blueGrey,
           ),
           const SizedBox(height: 20),
           ElevatedButton(
@@ -165,9 +174,17 @@ class _HomePageState extends State<HomePage>
                     });
               });
             },
-            child: const Text(
-              '已连接：MettaX',
-              style: TextStyle(fontSize: 16, color: Colors.blueGrey),
+            child: const SizedBox(
+              width: 150,
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline_rounded),
+                  Text(
+                    '已连接：MettaX',
+                    style: TextStyle(fontSize: 16, color: Colors.blueGrey),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
